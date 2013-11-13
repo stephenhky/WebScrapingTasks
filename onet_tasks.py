@@ -64,7 +64,7 @@ class JobTasksParser(HTMLParser.HTMLParser):
             
     def handle_data(self, data):
         if self.toreadtask:
-            self.tasklist.append(data)
+            self.tasklist.append(data.rstrip())
             self.toreadtask = False
 
 def get_all_soc8_links():
@@ -100,7 +100,7 @@ def retrieve_soc2010_names(filename):
     fin = open(filename)
     for line in fin:
         soc6 = line[0:7]
-        title = line[8:]
+        title = line[8:].strip()
         soc6dict[soc6] = {'name': title, 'subgroups': {}}
     fin.close()
     return soc6dict
@@ -121,7 +121,7 @@ def combine_soc2010_names_tasks(soc6dict, filename):
     
     print 'Opening the file ', filename
     fout = open(filename, 'wb')
-    writer = csv.writer(fout)
+    writer = csv.writer(fout, delimiter='\t')
     writer.writerow(soc2010nametasksheader)
         
     print 'Writing to file: ', filename
