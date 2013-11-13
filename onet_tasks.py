@@ -117,7 +117,7 @@ def combine_soc2010_names_tasks(soc6dict, filename):
         fjobpage = urllib.urlopen(onet_root+soclinkdict[soc8])
         tasksParser.feed(fjobpage.read())
         tasks = tasksParser.tasklist
-        soc6dict[soc6]['subgroups']['soc8'] = tasks
+        soc6dict[soc6]['subgroups'][soc8] = tasks
     
     print 'Opening the file ', filename
     fout = open(filename, 'wb')
@@ -127,7 +127,7 @@ def combine_soc2010_names_tasks(soc6dict, filename):
     print 'Writing to file: ', filename
     for soc6 in sorted(soc6dict.keys()):
         name = soc6dict[soc6]['name']
-        for soc8 in sorted(soc6dict[soc6]['subgroups'].values()):
+        for soc8 in sorted(soc6dict[soc6]['subgroups'].keys()):
             tasks = soc6dict[soc6]['subgroups'][soc8]
             writer.writerow([soc6, soc8, name]+tasks)
         
