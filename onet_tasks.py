@@ -10,7 +10,8 @@ import csv
 import urllib
 import sys
 
-fileheader = ['SOC6', 'SOC8', 'Tasks']
+tasksfileheader = ['SOC6', 'SOC8', 'Tasks']
+soc2010nametasksheader = ['SOC6', 'SOC8', 'Names', 'Tasks']
 
 onet_homepage = 'http://www.onetonline.org/find/family?f=0&g=Go'
 onet_root = 'http://www.onetonline.org'
@@ -65,18 +66,21 @@ class JobTasksParser(HTMLParser.HTMLParser):
         if self.toreadtask:
             self.tasklist.append(data)
             self.toreadtask = False
-            
-def retrieve_all_tasks(filename):
-    print 'Parsing the link from the root page: ', onet_homepage
+
+def get_all_soc8_links():
     linkParser = ONetHomepageSOCLinkParser()
     frootpage = urllib.urlopen(onet_homepage)
     linkParser.feed(frootpage.read())
-    soclinkdict = linkParser.socdict
+    return linkParser.socdict    
+ 
+def retrieve_all_tasks(filename):
+    print 'Parsing the link from the root page: ', onet_homepage
+    soclinkdict = get_all_soc8_links()
     
     print 'Opening the file ', filename
     fout = open(filename, 'wb')
     writer = csv.writer(fout)
-    writer.writerow(fileheader)
+    writer.writerow(tasksfileheader)
     
     print 'Parsing tasks...'
     for soc8 in soclinkdict:
@@ -90,9 +94,53 @@ def retrieve_all_tasks(filename):
         
     print 'Closing the file'
     fout.close()
+
+def retrieve_soc2010_names(filename):
+    soc6dict = {}
+    fin = open(filename)
+    for line in fin:
+        soc6 = line[0:7]
+        title = line[8:]
+        soc6dict[soc6] = {'name': title, 'subgroups': {}}
+    fin.close()
+    return soc6dict
+
+def combine_soc2010_names_tasks(soc6dict, filename):
+    print 'Parsing the link from the root page: ', onet_homepage
+    soclinkdict = get_all_soc8_links()
+
+    print 'Parsing tasks...'
+    for soc8 in soclinkdict:
+        soc6 = soc8[0:7]
+        print '\tParsing tasks for ', soc8
+        tasksParser = JobTasksParser()
+        fjobpage = urllib.urlopen(onet_root+soclinkdict[soc8])
+        tasksParser.feed(fjobpage.read())
+        tasks = tasksParser.tasklist
+        soc6dict[soc6]['subgroups']['soc8'] = tasks
+    
+    print 'Opening the file ', filename
+    fout = open(filename, 'wb')
+    writer = csv.writer(fout)
+    writer.writerow(soc2010nametasksheader)
+        
+    print 'Writing to file: ', filename
+    for soc6 in sorted(soc6dict.keys()):
+        name = soc6dict[soc6]['name']
+        for soc8 in sorted(soc6dict[soc6]['subgroups'].values()):
+            tasks = soc6dict[soc6]['subgroups'][soc8]
+            writer.writerow([soc6, soc8, name]+tasks)
+        
+    print 'Closing the file'
+    fout.close()
     
 if __name__ == '__main__':
     args = sys.argv
-    if len(args) >= 2:
-        filename = args[1]
-        retrieve_all_tasks(filename)
+    if len(args) >= 3:
+        todo = args[1]
+        filename = args[2]
+        if todo == 'scrape':
+            retrieve_all_tasks(filename)
+        elif todo == 'combine':
+            soc6dict = retrieve_soc2010_names('SOC2010_names.txt')
+            combine_soc2010_names_tasks(soc6dict, filename)
